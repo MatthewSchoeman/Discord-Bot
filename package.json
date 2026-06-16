@@ -1,0 +1,16 @@
+{
+  "name": "discord-game-picker-bot",
+  "version": "1.0.0",
+  "description": "Discord bot with a random game picker feature",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "node --watch bot.js"
+  },
+  "dependencies": {
+    "@discordjs/rest": "^2.4.0",
+    "discord-api-types": "^0.37.119",
+    "discord.js": "^14.16.0",
+    "dotenv": "^17.4.2"
+  }
+}
