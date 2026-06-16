@@ -123,9 +123,9 @@ process.on('unhandledRejection', err => console.error('Unhandled rejection:', er
 // ─── Interaction Handler ──────────────────────────────────────────────────────
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
-  if (interaction.channelId !== ALLOWED_CHANNEL_ID) {
+  if (interaction.channelId !== GAMING_CHANNEL_ID) {
       return interaction.reply({
-        content: `❌ My commands can only be used in <#${ALLOWED_CHANNEL_ID}>.`,
+        content: `❌ My commands can only be used in <#${GAMING_CHANNEL_ID}>.`,
         ephemeral: true // Only the user who ran the command will see this warning
       });
   }
