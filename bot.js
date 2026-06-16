@@ -3,6 +3,7 @@ const { Client, GatewayIntentBits, EmbedBuilder, SlashCommandBuilder } = require
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v10');
 const fs = require('fs');
+const cron = require('node-cron');
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const TOKEN = process.env.DISCORD_TOKEN;
@@ -56,6 +57,67 @@ function truncateList(items, limit = 1024) {
     used += line.length + 1;
   }
   return out.join('\n');
+}
+
+/**
+ * Automatically picks games for members and sends the announcement to the gaming channel.
+ */
+async function runAutoPick() {
+  console.log('Running automatic game pick...');
+  const data = loadData();
+  const guildId = GUILD_ID;
+  if (!data[guildId]) data[guildId] = { games: [] };
+  const pool = data[guildId].games;
+
+  if (pool.length === 0) {
+    console.log('Auto-pick skipped: No games in the pool.');
+    return;
+  }
+
+  try {
+    const guild = await client.guilds.fetch(GUILD_ID);
+    if (!guild) {
+      console.error(`Auto-pick error: Guild with ID ${GUILD_ID} not found.`);
+      return;
+    }
+
+    const channel = await guild.channels.fetch(GAMING_CHANNEL_ID);
+    if (!channel) {
+      console.error(`Auto-pick error: Channel with ID ${GAMING_CHANNEL_ID} not found.`);
+      return;
+    }
+
+    await guild.members.fetch(); // ensure cache is populated
+
+    const visibleMembers = guild.members.cache.filter(member => {
+      if (member.user.bot) return false; // skip bots
+      const perms = channel.permissionsFor(member);
+      return perms && perms.has('ViewChannel');
+    });
+
+    if (visibleMembers.size === 0) {
+      console.log('Auto-pick skipped: No non-bot members found in the channel.');
+      return;
+    }
+
+    const assignments = assignGamesRandomly([...visibleMembers.values()], pool);
+
+    const lines = Object.entries(assignments)
+      .map(([userId, game]) => `<@${userId}> → **${game}**`)
+      .join('\n');
+
+    const embed = new EmbedBuilder()
+      .setColor(0xeb459e) // pink
+      .setTitle('🎲 Monthly Game Assignments')
+      .setDescription(lines)
+      .setFooter({ text: `Picked from ${pool.length} game(s) · ${visibleMembers.size} member(s)` })
+      .setTimestamp();
+
+    await channel.send({ embeds: [embed] });
+    console.log('Auto-pick executed successfully.');
+  } catch (err) {
+    console.error('Error during auto-pick execution:', err);
+  }
 }
 
 // ─── Slash Command Definitions ────────────────────────────────────────────────
@@ -112,8 +174,19 @@ const client = new Client({
   ],
 });
 
-client.once('clientReady', () => {
+client.once('ready', () => {
   console.log(`✅  Logged in as ${client.user.tag}`);
+  console.log('\n🤖 Loaded commands:');
+  commands.forEach(cmd => {
+    console.log(`   /${cmd.name} - ${cmd.description}`);
+  });
+  console.log('');
+
+  // Schedule monthly auto-pick: runs at 00:00 on the 1st day of every month (0 0 1 * *)
+  cron.schedule('0 0 1 * *', () => {
+    runAutoPick();
+  });
+  console.log('📅 Scheduled automatic monthly game pick (0 0 1 * *).');
 });
 
 // Prevent unhandled errors from crashing the bot
