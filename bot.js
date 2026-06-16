@@ -7,7 +7,8 @@ const fs = require('fs');
 // ─── Config ───────────────────────────────────────────────────────────────────
 const TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
-const GUILD_ID = process.env.GUILD_ID; // Your server ID (for instant slash command refresh)
+const GUILD_ID = process.env.GUILD_ID; 
+const GAMING_CHANNEL_ID = process.env.GAMING_CHANNEL_ID; 
 
 // File to persist game lists between restarts
 const DATA_FILE = './game_data.json';
@@ -122,7 +123,12 @@ process.on('unhandledRejection', err => console.error('Unhandled rejection:', er
 // ─── Interaction Handler ──────────────────────────────────────────────────────
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
-
+  if (interaction.channelId !== ALLOWED_CHANNEL_ID) {
+      return interaction.reply({
+        content: `❌ My commands can only be used in <#${ALLOWED_CHANNEL_ID}>.`,
+        ephemeral: true // Only the user who ran the command will see this warning
+      });
+  }
   const guildId = interaction.guildId;
   const data = loadData();
   if (!data[guildId]) data[guildId] = { games: [] };
