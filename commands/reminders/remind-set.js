@@ -32,21 +32,6 @@ module.exports = {
       });
     }
 
-    const reminders = loadReminders();
-    const reminderId = Math.random().toString(36).substring(2, 9);
-
-    const newReminder = {
-      id: reminderId,
-      userId: interaction.user.id,
-      channelId: interaction.channelId,
-      message: message,
-      dueTime: parsedDate.toISOString(),
-      createdAt: new Date().toISOString(),
-    };
-
-    reminders.push(newReminder);
-    saveReminders(reminders);
-
     const targetUnix = Math.floor(parsedDate.getTime() / 1000);
     const embed = new EmbedBuilder()
       .setColor(0x57f287) // green
@@ -59,6 +44,22 @@ module.exports = {
       .setFooter({ text: `Use /remind-list to see your active reminders` })
       .setTimestamp();
 
-    return interaction.reply({ embeds: [embed] });
+    const reply = await interaction.reply({ embeds: [embed], fetchReply: true });
+
+    const reminders = loadReminders();
+    const reminderId = Math.random().toString(36).substring(2, 9);
+
+    const newReminder = {
+      id: reminderId,
+      userId: interaction.user.id,
+      channelId: interaction.channelId,
+      messageId: reply.id,
+      message: message,
+      dueTime: parsedDate.toISOString(),
+      createdAt: new Date().toISOString(),
+    };
+
+    reminders.push(newReminder);
+    saveReminders(reminders);
   }
 };

@@ -124,6 +124,32 @@ async function checkReminders(client) {
         console.error(`Failed to send reminder ${reminder.id} via DM to user ${reminder.userId}:`, dmErr);
       }
     }
+
+    // Edit the original "Reminder Set" message to remove the live relative timestamp
+    if (reminder.messageId) {
+      try {
+        const origChannel = await client.channels.fetch(reminder.channelId);
+        if (origChannel) {
+          const origMessage = await origChannel.messages.fetch(reminder.messageId);
+          if (origMessage && origMessage.embeds.length > 0) {
+            const targetUnix = Math.floor(new Date(reminder.dueTime).getTime() / 1000);
+            const updatedEmbed = new EmbedBuilder()
+              .setColor(0x95a5a6) // grey — delivered
+              .setTitle('✅ Reminder Delivered')
+              .setDescription(`Reminded you about:\n**${reminder.message}**`)
+              .addFields(
+                { name: 'Time', value: `<t:${targetUnix}:F>`, inline: true },
+                { name: 'Status', value: '✅ Delivered', inline: true }
+              )
+              .setFooter({ text: 'This reminder has been delivered' })
+              .setTimestamp();
+            await origMessage.edit({ embeds: [updatedEmbed] });
+          }
+        }
+      } catch (editErr) {
+        console.warn(`Could not edit original reminder message ${reminder.messageId}:`, editErr.message);
+      }
+    }
   }
 }
 
