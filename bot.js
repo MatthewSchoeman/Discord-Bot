@@ -13,6 +13,7 @@ const CLIENT_ID = process.env.CLIENT_ID;
 const GUILD_ID = process.env.GUILD_ID; 
 const GAMING_CHANNEL_ID = process.env.GAMING_CHANNEL_ID; 
 const REMINDER_CHANNEL_ID = process.env.REMINDER_CHANNEL_ID;
+const TIMEZONE = process.env.TIMEZONE || 'Africa/Johannesburg';
 
 // ─── Bot Client ───────────────────────────────────────────────────────────────
 const client = new Client({
@@ -66,11 +67,14 @@ client.once('ready', () => {
   });
   console.log('');
 
-  // Schedule monthly auto-pick: runs at 00:00 on the 1st day of every month (0 0 1 * *)
-  cron.schedule('0 0 1 * *', () => {
+  // Schedule monthly auto-pick: runs at 20:00 (8 PM) on the 1st day of every month
+  cron.schedule('0 20 1 * *', () => {
     runAutoPick(client);
+  }, {
+    scheduled: true,
+    timezone: TIMEZONE
   });
-  console.log('📅 Scheduled automatic monthly game pick (0 0 1 * *).');
+  console.log(`📅 Scheduled automatic monthly game pick (0 20 1 * * in ${TIMEZONE}).`);
 
   // Check reminders every 15 seconds
   setInterval(() => {
